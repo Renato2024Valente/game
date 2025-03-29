@@ -20,6 +20,8 @@ let tempoExplosao = [];
 let inimigosExtras = [];
 let tiposExtras = [];
 
+let botaoJogar;
+
 function preload() {
   naveImg = loadImage('nave.png');
   inimigoImg = loadImage('inimigo.png');
@@ -40,6 +42,19 @@ function setup() {
   naveY = height - 80;
   textAlign(CENTER, CENTER);
   textSize(20);
+
+  // Criar botão visível para iniciar no celular
+  botaoJogar = createButton("JOGAR");
+  botaoJogar.position(width / 2 - 50, height / 2 + 40);
+  botaoJogar.size(100, 40);
+  botaoJogar.style('font-size', '20px');
+  botaoJogar.style('background-color', '#00ff00');
+  botaoJogar.style('border', 'none');
+  botaoJogar.style('border-radius', '10px');
+  botaoJogar.mousePressed(() => {
+    iniciarJogo();
+    botaoJogar.hide();
+  });
 
   musicaAbertura.setLoop(true);
   musicaAbertura.play();
@@ -72,7 +87,7 @@ function draw() {
     if (tiro.y < 0) tiros.splice(i, 1);
   }
 
-  // ==== INIMIGOS ==== (sem mudanças)
+  // ==== INIMIGOS ====
   for (let i = inimigos.length - 1; i >= 0; i--) {
     let inimigo = inimigos[i];
     image(inimigoImg, inimigo.x, inimigo.y, 40, 40);
@@ -85,33 +100,52 @@ function draw() {
     tempoSpawnInimigo = millis();
   }
 
-  // ==== COLISÃO TIRO x INIMIGO ==== (sem mudanças)
+  // ==== COLISÃO TIRO x INIMIGO ====
+  for (let i = inimigos.length - 1; i >= 0; i--) {
+    for (let j = tiros.length - 1; j >= 0; j--) {
+      let dx = inimigos[i].x - tiros[j].x;
+      let dy = inimigos[i].y - tiros[j].y;
+      let distancia = sqrt(dx * dx + dy * dy);
+      if (distancia < 30) {
+        inimigos.splice(i, 1);
+        tiros.splice(j, 1);
+        pontos++;
+        somExplosao.play();
+        break;
+      }
+    }
+  }
 
-  // ... [mantido igual, não cabe aqui por limite de caracteres]
+  // ==== NAVE ====
+  imageMode(CENTER);
+  image(naveImg, naveX, naveY, naveW, naveH);
 
   // ==== TOUCH ====
-  // Iniciar jogo com toque
   if (!jogoIniciado && touches.length > 0) {
     iniciarJogo();
   }
 
-  // Atirar com toque
   if (jogoIniciado && touches.length > 0 && millis() - tempoUltimoTiro > 250) {
     tiros.push(createVector(naveX, naveY - naveH / 2));
     tempoUltimoTiro = millis();
     somTiro.play();
   }
 
-  // Mover nave com dedo na tela
   if (touches.length > 0) {
     naveX = touches[0].x;
     naveY = touches[0].y;
   }
+
+  // ==== PONTUAÇÃO ====
+  fill(255);
+  textSize(20);
+  text("Pontos: " + pontos, width - 100, 30);
 }
 
 function keyPressed() {
   if (!jogoIniciado && keyCode === ENTER) {
     iniciarJogo();
+    botaoJogar.hide();
   }
 
   if (jogoFinalizado && key === 'r') {
@@ -129,6 +163,9 @@ function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
   naveX = width / 2;
   naveY = height - 80;
+  if (botaoJogar) {
+    botaoJogar.position(width / 2 - 50, height / 2 + 40);
+  }
 }
 
 function iniciarJogo() {
@@ -145,6 +182,8 @@ function iniciarJogo() {
   inimigosExtras = [];
   tiposExtras = [];
   tempoSpawnInimigo = millis();
+
+  if (botaoJogar) botaoJogar.hide();
 
   musicaAbertura.stop();
   musicaFundo.setLoop(true);
